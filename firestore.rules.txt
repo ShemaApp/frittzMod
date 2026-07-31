@@ -1,0 +1,96 @@
+// firestore.rules — Productos de la Costa
+// Cómo usarlo: Firebase Console → Firestore Database → Reglas → pega este
+// contenido completo → Publicar.
+//
+// Modelo de permisos (refleja lo que la app ya asume):
+// - Cualquier usuario con sesión iniciada puede leer/escribir los datos
+//   operativos del día a día (productos, clientes, notas, créditos, rutas).
+// - Solo usuarios con role:'admin' (colección /usuarios) pueden administrar
+//   cuentas de usuario y borrar catálogos sensibles.
+// - inventario_historial y devoluciones son de solo lectura una vez creados
+//   (son bitácoras: no se editan ni se borran).
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Perfiles de usuario del sistema
+    match /usuarios/{uid} {
+      allow read: if isSignedIn();
+      // Un usuario nuevo crea su propio perfil justo después de registrarse;
+      // un admin también puede crear/editar perfiles de otros.
+      allow create, update: if isOwner(uid) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Catálogo de productos
+    match /productos/{id} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // Clientes
+    match /clientes/{id} {
+      allow read, create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // Pedidos / ventas (notas)
+    match /notas/{id} {
+      allow read, create: if isSignedIn();
+      // Una nota es un comprobante de venta: no se debe editar ni borrar
+      // desde el cliente una vez creada.
+      allow update, delete: if isAdmin();
+    }
+
+    // Créditos y abonos
+    match /creditos/{id} {
+      allow read, create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // Rutas de reparto (carga simple de camión)
+    match /rutas/{id} {
+      allow read, create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // Rutas programadas (módulo de repartidores)
+    match /rutas_meta/{id} {
+      allow read, create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // Bitácora de cambios de inventario — solo agregar, nunca editar/borrar
+    match /inventario_historial/{id} {
+      allow read, create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    // Devoluciones y cambios — solo agregar, nunca editar/borrar
+    match /devoluciones/{id} {
+      allow read, create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    // Bandera interna de datos semilla
+    match /_meta/{id} {
+      allow read, write: if isSignedIn();
+    }
+  }
+}
