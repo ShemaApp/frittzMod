@@ -8,12 +8,12 @@
 // el ÚNICO archivo que necesitas tocar para apuntar a otro proyecto de Firebase.
 
 const firebaseConfig = {
-    apiKey: "AIzaSyDjWoF96LAykPqYlhvxGU57WXAdumEKhak",
-    authDomain: "app-fritts-pdlc.firebaseapp.com",
-    projectId: "app-fritts-pdlc",
-    storageBucket: "app-fritts-pdlc.firebasestorage.app",
-    messagingSenderId: "275135058300",
-    appId: "1:275135058300:web:9209711a5584ed6eb254f9"
+    apiKey: 
+    authDomain: 
+    projectId: 
+    storageBucket: 
+    messagingSenderId: 
+    appId: 
   };
 
 if (typeof firebase === 'undefined') {
